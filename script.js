@@ -6,7 +6,8 @@ const sections = navLinks
   .map((link) => document.querySelector(link.getAttribute("href")))
   .filter(Boolean);
 
-const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:3010" : "";
+const IS_STATIC_HOST = window.location.hostname.endsWith("github.io");
+const API_BASE = window.SUL_PONTICELLAS_API || (window.location.protocol === "file:" ? "http://127.0.0.1:3010" : "");
 const translations = {
   pt: {
     "meta.title": "Sul Ponticellas | Música ao vivo para casamentos e eventos",
@@ -46,6 +47,7 @@ const translations = {
     "events.loading": "A carregar próximos eventos...",
     "events.empty": "Ainda não há próximos eventos públicos. Quando adicionares no admin, aparecem aqui automaticamente.",
     "events.error": "Para ver eventos, inicia o backend com <code>npm start</code> dentro da pasta do site.",
+    "events.static": "Agenda pública em breve. Para datas e disponibilidade, fala connosco por email ou Instagram.",
     "events.tickets": "Entradas",
     "events.book": "Reservar",
     "events.priceFallback": "Consultar",
@@ -56,6 +58,7 @@ const translations = {
     "reviews.loading": "A carregar avaliações...",
     "reviews.empty": "Ainda não há avaliações aprovadas.",
     "reviews.error": "As avaliações aparecem aqui quando o backend estiver ativo.",
+    "reviews.static": "As avaliações aprovadas vão aparecer aqui quando o backend estiver ligado ao site online.",
     "reviews.defaultEvent": "Evento Sul Ponticellas",
     "reviews.stars": "de 5 estrelas",
     "reviewForm.title": "Partilhar uma avaliação",
@@ -67,6 +70,7 @@ const translations = {
     "reviewForm.submit": "Enviar avaliação",
     "reviewForm.saving": "A guardar avaliação...",
     "reviewForm.success": "Avaliação recebida. Fica pendente até ser aprovada no admin.",
+    "reviewForm.static": "A recolha de avaliações online fica disponível quando o backend estiver ativo.",
     "repertoire.label": "Repertório",
     "repertoire.title": "Do primeiro acorde ao último brinde",
     "repertoire.copy": "O nosso repertório une música clássica, bandas sonoras, pop, baladas, boleros e peças tradicionais. Se há uma canção que vos pertence, tornamo-la vossa.",
@@ -122,6 +126,7 @@ const translations = {
     "booking.submit": "Enviar pedido",
     "booking.sending": "A enviar...",
     "booking.success": "Pedido recebido. Ficou guardado no backend e pode ser visto no admin.",
+    "booking.static": "A reserva online fica disponível quando o backend estiver ativo. Para já, usa o email ou Instagram acima.",
     "form.name": "Nome",
     "form.namePlaceholder": "Os vossos nomes",
     "form.message": "Mensagem",
@@ -166,6 +171,7 @@ const translations = {
     "events.loading": "Cargando próximos eventos...",
     "events.empty": "Todavía no hay próximos eventos públicos. Cuando los añadas en el admin, aparecerán aquí automáticamente.",
     "events.error": "Para ver eventos, inicia el backend con <code>npm start</code> dentro de la carpeta del sitio.",
+    "events.static": "Agenda pública próximamente. Para fechas y disponibilidad, escríbenos por email o Instagram.",
     "events.tickets": "Entradas",
     "events.book": "Reservar",
     "events.priceFallback": "Consultar",
@@ -176,6 +182,7 @@ const translations = {
     "reviews.loading": "Cargando reseñas...",
     "reviews.empty": "Todavía no hay reseñas aprobadas.",
     "reviews.error": "Las reseñas aparecerán aquí cuando el backend esté activo.",
+    "reviews.static": "Las reseñas aprobadas aparecerán aquí cuando el backend esté conectado al sitio online.",
     "reviews.defaultEvent": "Evento Sul Ponticellas",
     "reviews.stars": "de 5 estrellas",
     "reviewForm.title": "Compartir una reseña",
@@ -187,6 +194,7 @@ const translations = {
     "reviewForm.submit": "Enviar reseña",
     "reviewForm.saving": "Guardando reseña...",
     "reviewForm.success": "Reseña recibida. Queda pendiente hasta que sea aprobada en el admin.",
+    "reviewForm.static": "La recogida de reseñas online estará disponible cuando el backend esté activo.",
     "repertoire.label": "Repertorio",
     "repertoire.title": "Del primer acorde al último brindis",
     "repertoire.copy": "Nuestro repertorio une música clásica, bandas sonoras, pop, baladas, boleros y piezas tradicionales. Si hay una canción que os pertenece, la hacemos vuestra.",
@@ -242,6 +250,7 @@ const translations = {
     "booking.submit": "Enviar pedido",
     "booking.sending": "Enviando...",
     "booking.success": "Pedido recibido. Queda guardado en el backend y puede verse en el admin.",
+    "booking.static": "La reserva online estará disponible cuando el backend esté activo. Por ahora, usa el email o Instagram de arriba.",
     "form.name": "Nombre",
     "form.namePlaceholder": "Vuestros nombres",
     "form.message": "Mensaje",
@@ -351,6 +360,15 @@ async function renderEvents() {
   const list = document.querySelector("[data-events-list]");
   if (!list) return;
 
+  if (IS_STATIC_HOST) {
+    list.innerHTML = `
+      <article class="empty-state">
+        <p>${t("events.static")}</p>
+      </article>
+    `;
+    return;
+  }
+
   try {
     const { events } = await api("/api/events");
     if (!events.length) {
@@ -405,6 +423,15 @@ function stars(rating) {
 async function renderReviews() {
   const list = document.querySelector("[data-reviews-list]");
   if (!list) return;
+
+  if (IS_STATIC_HOST) {
+    list.innerHTML = `
+      <article class="empty-state">
+        <p>${t("reviews.static")}</p>
+      </article>
+    `;
+    return;
+  }
 
   try {
     const { reviews } = await api("/api/reviews");
@@ -490,6 +517,10 @@ if (contactForm) {
   contactForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const status = document.querySelector("[data-contact-status]");
+    if (IS_STATIC_HOST) {
+      setStatus(status, t("booking.static"), "muted");
+      return;
+    }
     const payload = formPayload(contactForm);
 
     try {
@@ -511,6 +542,10 @@ if (reviewForm) {
   reviewForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const status = document.querySelector("[data-review-status]");
+    if (IS_STATIC_HOST) {
+      setStatus(status, t("reviewForm.static"), "muted");
+      return;
+    }
     const payload = formPayload(reviewForm);
     payload.rating = Number(payload.rating);
 
