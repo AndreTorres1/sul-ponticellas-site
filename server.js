@@ -11,6 +11,9 @@ const DATA_DIR = path.join(ROOT, "data");
 const DB_PATH = path.join(DATA_DIR, "db.json");
 const TOKEN_PATH = path.join(DATA_DIR, "admin-token.txt");
 const AUDIT_PATH = path.join(DATA_DIR, "activity-log.csv");
+const GOOGLE_SHEETS_AUDIT_URL = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_URL);
+const GOOGLE_SHEETS_AUDIT_SECRET = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_SECRET);
+const GOOGLE_SHEETS_PRIVATE_URL = cleanEnv(process.env.GOOGLE_SHEETS_PRIVATE_URL);
 
 const DEFAULT_TEAM_TOKEN_HASHES = [
   { name: "Andre", role: "owner", hash: "8e9c1d981b419e3b148e54a48c53085f91ff802c5be64749f385d3564c6e02fb" },
@@ -39,6 +42,10 @@ const initialDb = {
   inquiries: [],
   reviews: [],
 };
+
+function cleanEnv(value) {
+  return String(value || "").trim();
+}
 
 async function ensureDb() {
   if (!existsSync(DATA_DIR)) await mkdir(DATA_DIR, { recursive: true });
@@ -171,20 +178,57 @@ function csv(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
-async function logAudit(actor, action, entityType, entityId, summary) {
-  await ensureDb();
-  const row = [
-    new Date().toISOString(),
-    actor?.name || "desconhecido",
-    actor?.role || "",
+function auditRecord(actor, action, entityType, entityId, summary) {
+  return {
+    createdAt: new Date().toISOString(),
+    actor: actor?.name || "desconhecido",
+    role: actor?.role || "",
     action,
     entityType,
     entityId,
     summary,
+  };
+}
+
+async function writeLocalAudit(record) {
+  const row = [
+    record.createdAt,
+    record.actor,
+    record.role,
+    record.action,
+    record.entityType,
+    record.entityId,
+    record.summary,
   ]
     .map(csv)
     .join(",");
   await appendFile(AUDIT_PATH, `${row}\n`);
+}
+
+async function writeGoogleAudit(record) {
+  if (!GOOGLE_SHEETS_AUDIT_URL || !GOOGLE_SHEETS_AUDIT_SECRET) return false;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(GOOGLE_SHEETS_AUDIT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: GOOGLE_SHEETS_AUDIT_SECRET, record }),
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function logAudit(actor, action, entityType, entityId, summary) {
+  await ensureDb();
+  const record = auditRecord(actor, action, entityType, entityId, summary);
+  const loggedToGoogle = await writeGoogleAudit(record);
+  if (!loggedToGoogle) await writeLocalAudit(record);
 }
 
 function publicEvents(events) {
@@ -207,6 +251,13 @@ async function handleApi(req, res, url) {
     const identity = await requireAdmin(req, res, { ownerOnly: true });
     if (!identity) return;
     return sendCsv(res, 200, "sul-ponticellas-activity-log.csv", await readFile(AUDIT_PATH, "utf8"));
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/audit-sheet") {
+    const identity = await requireAdmin(req, res, { ownerOnly: true });
+    if (!identity) return;
+    if (!GOOGLE_SHEETS_PRIVATE_URL) return sendError(res, 404, "Google Sheets ainda não configurado.");
+    return sendJson(res, 200, { url: GOOGLE_SHEETS_PRIVATE_URL });
   }
 
   if (req.method === "GET" && url.pathname === "/api/events") {

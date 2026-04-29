@@ -1034,6 +1034,18 @@ legend {
   object-position: center 25%;
 }
 
+.musician-card__image--lorena {
+  object-position: 12% 45%;
+}
+
+.musician-card__image--veronica {
+  object-position: 72% 44%;
+}
+
+.musician-card__image--jessica {
+  object-position: 94% 42%;
+}
+
 .musician-card div {
   display: grid;
   align-content: center;

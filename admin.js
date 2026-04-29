@@ -74,6 +74,20 @@ async function loadSession() {
   currentUser = user;
   sessionStatus.textContent = `Sessão ativa: ${user.name}${user.role === "owner" ? " · acesso principal" : ""}`;
   auditDownload.hidden = user.role !== "owner";
+  auditDownload.textContent = "Descarregar registo Excel";
+  auditDownload.removeAttribute("target");
+
+  if (user.role === "owner") {
+    try {
+      const sheet = await api("/api/audit-sheet");
+      auditDownload.textContent = "Abrir Google Sheets";
+      auditDownload.href = sheet.url;
+      auditDownload.target = "_blank";
+      auditDownload.rel = "noreferrer";
+    } catch {
+      auditDownload.href = "/api/audit.csv";
+    }
+  }
 }
 
 async function loadEvents() {
@@ -198,6 +212,7 @@ document.querySelector("[data-event-form]").addEventListener("submit", async (ev
 });
 
 auditDownload.addEventListener("click", async (event) => {
+  if (auditDownload.target === "_blank") return;
   event.preventDefault();
   try {
     const response = await fetch(`${API_BASE}/api/audit.csv`, {
