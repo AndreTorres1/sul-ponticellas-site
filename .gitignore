@@ -1,0 +1,4 @@
+data/admin-token.txt
+data/db.json
+node_modules/
+.DS_Store

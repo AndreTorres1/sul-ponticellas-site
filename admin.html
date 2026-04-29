@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin | Sul Ponticellas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin.css">
+  </head>
+  <body class="admin-page">
+    <header class="admin-header">
+      <a class="brand" href="index.html">
+        <img src="assets/logo-badge.jpg" alt="" class="brand__mark">
+        <span class="brand__text">
+          <span>Sul Ponticellas</span>
+          <em>Painel local</em>
+        </span>
+      </a>
+      <a class="button button--dark" href="index.html">Ver site</a>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-hero">
+        <p class="section-label">Admin</p>
+        <h1>Gestão de eventos, contactos e avaliações</h1>
+        <p>Este painel grava tudo no backend local. Para proteger os dados, cola aqui o token que aparece no terminal quando arrancas o servidor.</p>
+        <form class="admin-token" data-token-form>
+          <label>
+            <span>Token admin</span>
+            <input name="token" type="password" placeholder="colar token">
+          </label>
+          <button class="button button--dark" type="submit">Guardar token</button>
+        </form>
+      </section>
+
+      <section class="admin-grid">
+        <form class="admin-card admin-form" data-event-form>
+          <h2>Novo evento</h2>
+          <label>
+            <span>Título</span>
+            <input name="title" type="text" placeholder="Concierto de Primavera" required>
+          </label>
+          <div class="admin-form__row">
+            <label>
+              <span>Data</span>
+              <input name="date" type="date" required>
+            </label>
+            <label>
+              <span>Hora</span>
+              <input name="time" type="time">
+            </label>
+          </div>
+          <label>
+            <span>Local</span>
+            <input name="venue" type="text" placeholder="Pazo, auditório, quinta...">
+          </label>
+          <div class="admin-form__row">
+            <label>
+              <span>Cidade</span>
+              <input name="city" type="text" placeholder="A Coruña">
+            </label>
+            <label>
+              <span>País</span>
+              <input name="country" type="text" value="España">
+            </label>
+          </div>
+          <label>
+            <span>Preço</span>
+            <input name="price" type="text" placeholder="Entrada libre / Desde 15 EUR">
+          </label>
+          <label>
+            <span>Link bilhetes</span>
+            <input name="ticketUrl" type="url" placeholder="https://...">
+          </label>
+          <label>
+            <span>Descrição</span>
+            <textarea name="description" placeholder="Pequena descrição do evento"></textarea>
+          </label>
+          <label class="admin-check">
+            <input name="published" type="checkbox" checked>
+            <span>Publicado no site</span>
+          </label>
+          <button class="button button--dark" type="submit">Adicionar evento</button>
+          <p class="form-status" data-event-status aria-live="polite"></p>
+        </form>
+
+        <section class="admin-card">
+          <h2>Eventos guardados</h2>
+          <div class="admin-list" data-admin-events></div>
+        </section>
+      </section>
+
+      <section class="admin-grid admin-grid--wide">
+        <section class="admin-card">
+          <h2>Pedidos recebidos</h2>
+          <div class="admin-list" data-admin-inquiries></div>
+        </section>
+        <section class="admin-card">
+          <h2>Avaliações</h2>
+          <div class="admin-list" data-admin-reviews></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sul Ponticellas | Música ao vivo para casamentos e eventos</title>
+    <meta name="description" content="Sul Ponticellas oferece música de cordas ao vivo para casamentos, cerimónias e eventos na Galiza e em Portugal.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#inicio" aria-label="Sul Ponticellas">
+        <img src="assets/logo-badge.jpg" alt="" class="brand__mark">
+        <span class="brand__text">
+          <span>Sul Ponticellas</span>
+          <em>Galicia & Portugal</em>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav id="site-nav" class="site-nav" data-nav>
+        <a href="#inicio" data-i18n="nav.home">Início</a>
+        <a href="#servicios" data-i18n="nav.services">Serviços</a>
+        <a href="#repertorio" data-i18n="nav.repertoire">Repertório</a>
+        <a href="#galeria" data-i18n="nav.gallery">Galeria</a>
+        <a href="#contacto" data-i18n="nav.contact">Contacto</a>
+        <span class="language-switch" aria-label="Idioma">
+          <button type="button" data-lang="pt" aria-pressed="true">PT</button>
+          <button type="button" data-lang="es" aria-pressed="false">ES</button>
+        </span>
+        <a class="nav-cta" href="#reservar" data-i18n="nav.book">Reservar</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="inicio" class="hero">
+        <picture class="hero__media">
+          <img src="assets/group-bw-2.jpg" alt="Sul Ponticellas con violonchelos en estudio" fetchpriority="high">
+        </picture>
+        <div class="hero__overlay"></div>
+        <div class="hero__content">
+          <p class="eyebrow" data-i18n="hero.eyebrow">Música ao vivo</p>
+          <h1>Sul Ponticellas</h1>
+          <p class="hero__lead" data-i18n="hero.lead">Cordas, emoção e memórias que ficam para sempre.</p>
+          <div class="hero__actions">
+            <a class="button button--light" href="#reservar" data-i18n="hero.cta">Consultar disponibilidade</a>
+            <a class="button button--ghost-light" href="#servicios" data-i18n="hero.secondary">Ver serviços</a>
+          </div>
+        </div>
+        <a class="hero__scroll" href="#servicios" aria-label="Ir a serviços" data-i18n="hero.scroll">Descobrir</a>
+      </section>
+
+      <section id="servicios" class="section section--warm">
+        <div class="section__intro">
+          <p class="section-label" data-i18n="services.label">Serviços</p>
+          <h2 data-i18n="services.title">Música para cada momento da vossa celebração</h2>
+          <p data-i18n="services.copy">Adaptamos formato, repertório e presença musical para que cada instante tenha o seu próprio pulso.</p>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <span class="service-card__symbol">01</span>
+            <h3 data-i18n="services.ceremony.title">Cerimónia</h3>
+            <p data-i18n="services.ceremony.copy">Entrada, votos, assinaturas e saída com um repertório cuidado, dos clássicos de cordas às músicas que fazem parte da vossa história.</p>
+            <ul>
+              <li data-i18n="services.ceremony.item1">Duo violino e violoncelo</li>
+              <li data-i18n="services.ceremony.item2">Trio de cordas</li>
+              <li data-i18n="services.ceremony.item3">Quarteto</li>
+            </ul>
+          </article>
+          <article class="service-card service-card--dark">
+            <span class="service-card__symbol">02</span>
+            <h3 data-i18n="services.cocktail.title">Cocktail e receção</h3>
+            <p data-i18n="services.cocktail.copy">Uma atmosfera elegante e próxima para receber convidados, acompanhar conversas e preencher o espaço sem o invadir.</p>
+            <ul>
+              <li data-i18n="services.cocktail.item1">Clássico leve</li>
+              <li data-i18n="services.cocktail.item2">Pop acústico</li>
+              <li data-i18n="services.cocktail.item3">Bossa, jazz e boleros</li>
+            </ul>
+          </article>
+          <article class="service-card">
+            <span class="service-card__symbol">03</span>
+            <h3 data-i18n="services.private.title">Eventos privados</h3>
+            <p data-i18n="services.private.copy">Concertos íntimos, jantares, pedidos, aniversários e encontros especiais na Galiza e em Portugal.</p>
+            <ul>
+              <li data-i18n="services.private.item1">Sets de 45 a 60 minutos</li>
+              <li data-i18n="services.private.item2">Repertório personalizado</li>
+              <li data-i18n="services.private.item3">Formato flexível</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="eventos" class="section events">
+        <div class="section__intro">
+          <p class="section-label" data-i18n="events.label">Agenda</p>
+          <h2 data-i18n="events.title">Próximos eventos</h2>
+          <p data-i18n="events.copy">Uma zona viva para concertos e aparições públicas. Os eventos são atualizados no painel de administração.</p>
+        </div>
+        <div class="events-list" data-events-list>
+          <article class="empty-state">
+            <p data-i18n="events.loading">A carregar próximos eventos...</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="avaliacoes" class="section reviews">
+        <div class="reviews__header">
+          <div>
+            <p class="section-label" data-i18n="reviews.label">Avaliações</p>
+            <h2 data-i18n="reviews.title">O que fica depois da música</h2>
+            <p data-i18n="reviews.copy">Depois de uma cerimónia ou evento, as palavras de quem esteve lá ajudam futuros casais a imaginar o seu próprio momento.</p>
+          </div>
+          <a class="button button--dark" href="#review-form" data-i18n="reviews.cta">Deixar avaliação</a>
+        </div>
+        <div class="reviews-grid" data-reviews-list>
+          <article class="empty-state">
+            <p data-i18n="reviews.loading">A carregar avaliações...</p>
+          </article>
+        </div>
+        <form id="review-form" class="review-form" data-review-form>
+          <div class="review-form__intro">
+            <h3 data-i18n="reviewForm.title">Partilhar uma avaliação</h3>
+            <p data-i18n="reviewForm.copy">As avaliações só aparecem no site depois de serem aprovadas por ti no painel admin.</p>
+          </div>
+          <label>
+            <span data-i18n="form.name">Nome</span>
+            <input name="name" type="text" placeholder="Os vossos nomes" data-i18n-placeholder="form.namePlaceholder" required>
+          </label>
+          <label>
+            <span data-i18n="reviewForm.event">Evento</span>
+            <input name="event" type="text" placeholder="Casamento, concerto, cerimónia..." data-i18n-placeholder="reviewForm.eventPlaceholder" required>
+          </label>
+          <fieldset class="rating-field">
+            <legend data-i18n="reviewForm.rating">Avaliação</legend>
+            <label><input type="radio" name="rating" value="5" required><span>5</span></label>
+            <label><input type="radio" name="rating" value="4"><span>4</span></label>
+            <label><input type="radio" name="rating" value="3"><span>3</span></label>
+            <label><input type="radio" name="rating" value="2"><span>2</span></label>
+            <label><input type="radio" name="rating" value="1"><span>1</span></label>
+          </fieldset>
+          <label class="review-form__full">
+            <span data-i18n="form.message">Mensagem</span>
+            <textarea name="message" placeholder="Conta-nos como foi a experiência..." data-i18n-placeholder="reviewForm.messagePlaceholder" required></textarea>
+          </label>
+          <button class="button button--dark" type="submit" data-i18n="reviewForm.submit">Enviar avaliação</button>
+          <p class="form-status" data-review-status aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="repertorio" class="section repertoire">
+        <div class="repertoire__image">
+          <img src="assets/group-color-1.jpg" alt="Sul Ponticellas en retrato de estudio a color">
+        </div>
+        <div class="repertoire__content">
+          <p class="section-label" data-i18n="repertoire.label">Repertório</p>
+          <h2 data-i18n="repertoire.title">Do primeiro acorde ao último brinde</h2>
+          <p data-i18n="repertoire.copy">O nosso repertório une música clássica, bandas sonoras, pop, baladas, boleros e peças tradicionais. Se há uma canção que vos pertence, tornamo-la vossa.</p>
+          <div class="repertoire-list">
+            <span>Canon in D</span>
+            <span>Ave María</span>
+            <span>La Vie en Rose</span>
+            <span>Can't Help Falling in Love</span>
+            <span>Viva la Vida</span>
+            <span>Perfect</span>
+            <span>Hallelujah</span>
+            <span>Música gallega</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="galeria" class="section section--dark">
+        <div class="section__intro section__intro--dark">
+          <p class="section-label" data-i18n="gallery.label">Galeria</p>
+          <h2 data-i18n="gallery.title">Retratos, palco e aqueles segundos que ficam</h2>
+        </div>
+        <div class="gallery">
+          <figure class="gallery__item gallery__item--tall">
+            <img src="assets/group-color-2.jpg" alt="Cuarteto Sul Ponticellas con violonchelos">
+            <figcaption>Sesión de estudio</figcaption>
+          </figure>
+          <figure class="gallery__item">
+            <img src="assets/photo-quartet-studio.jpg" alt="Sul Ponticellas con instrumentos en estudio">
+            <figcaption>Ensayo y retrato</figcaption>
+          </figure>
+          <figure class="gallery__item">
+            <img src="assets/photo-quartet-venue.jpg" alt="Sul Ponticellas en evento">
+            <figcaption>Eventos privados</figcaption>
+          </figure>
+          <figure class="gallery__item gallery__item--wide">
+            <img src="assets/group-bw-4.jpg" alt="Sul Ponticellas en blanco y negro">
+            <figcaption>Cuarteto de cuerdas</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="nosotras" class="section about">
+        <div class="about__copy">
+          <p class="section-label" data-i18n="about.label">Nós</p>
+          <h2 data-i18n="about.title">Um quarteto com raiz galega e alma de celebração</h2>
+          <p data-i18n="about.copy1">Somos Sul Ponticellas, um projeto de música ao vivo nascido na Galiza para acompanhar casamentos, cerimónias e momentos que pedem algo mais do que uma playlist.</p>
+          <p data-i18n="about.copy2">Gostamos de tocar perto: escutar a vossa história, entender o lugar, escolher o repertório com delicadeza e transformá-lo numa memória sonora.</p>
+          <div class="stats">
+            <span><strong>4</strong> <span data-i18n="about.stat1">músicas</span></span>
+            <span><strong>3</strong> <span data-i18n="about.stat2">formatos</span></span>
+            <span><strong>2</strong> <span data-i18n="about.stat3">países</span></span>
+          </div>
+        </div>
+        <div class="about__image-stack">
+          <img src="assets/group-bw-laugh.jpg" alt="Sul Ponticellas sonriendo en blanco y negro">
+          <img src="assets/photo-quartet-outdoor.jpg" alt="Sul Ponticellas en exterior">
+        </div>
+      </section>
+
+      <section id="musicas" class="section musicians">
+        <div class="musicians__intro">
+          <p class="section-label" data-i18n="musicians.label">As músicas</p>
+          <h2 data-i18n="musicians.title">Quem está por trás do som</h2>
+          <p data-i18n="musicians.copy">Uma apresentação breve de cada integrante, para afinar à medida que recebermos os textos finais.</p>
+        </div>
+        <div class="musician-carousel" data-carousel>
+          <button class="carousel-button carousel-button--prev" type="button" aria-label="Anterior" data-carousel-prev>‹</button>
+          <div class="musician-track" data-carousel-track>
+            <article class="musician-card">
+              <img src="assets/member-a-color-1.jpg" alt="Violoncelista Sul Ponticellas">
+              <div>
+                <span data-i18n="musicians.card1.kicker">Violoncelo</span>
+                <h3 data-i18n="musicians.card1.title">Portugal no arco</h3>
+                <p data-i18n="musicians.card1.copy">Portuguesa, leva já alguns anos no ramo da música e traz ao violoncelo uma presença firme, sensível e muito próxima. É uma das vozes graves que dão corpo e calor ao som de Sul Ponticellas.</p>
+              </div>
+            </article>
+            <article class="musician-card">
+              <img src="assets/member-a-bw-1.jpg" alt="Paula, música de Sul Ponticellas">
+              <div>
+                <span data-i18n="musicians.card2.kicker">Paula</span>
+                <h3 data-i18n="musicians.card2.title">Prodígio jovem</h3>
+                <p data-i18n="musicians.card2.copy">A Paula tem aquela energia rara de quem parece ter nascido dentro da música. Jovem, expressiva e com uma voz incrível, acrescenta brilho, frescura e uma musicalidade muito própria ao grupo.</p>
+              </div>
+            </article>
+            <article class="musician-card">
+              <img src="assets/member-b-bw-1.jpg" alt="Música de Sul Ponticellas">
+              <div>
+                <span data-i18n="musicians.card3.kicker">A completar</span>
+                <h3 data-i18n="musicians.card3.title">Uma presença a apresentar</h3>
+                <p data-i18n="musicians.card3.copy">Espaço reservado para uma breve descrição: percurso, instrumento, estilo e aquele detalhe pessoal que ajuda os casais a sentirem quem vai tocar no seu dia.</p>
+              </div>
+            </article>
+            <article class="musician-card">
+              <img src="assets/photo-quartet-studio.jpg" alt="Integrante de Sul Ponticellas">
+              <div>
+                <span data-i18n="musicians.card4.kicker">A completar</span>
+                <h3 data-i18n="musicians.card4.title">Mais uma história do quarteto</h3>
+                <p data-i18n="musicians.card4.copy">Espaço para acrescentar a explicação da quarta integrante, com a mesma linguagem próxima, elegante e humana do resto do site.</p>
+              </div>
+            </article>
+          </div>
+          <button class="carousel-button carousel-button--next" type="button" aria-label="Seguinte" data-carousel-next>›</button>
+          <div class="carousel-dots" data-carousel-dots aria-label="Escolher música"></div>
+        </div>
+      </section>
+
+      <section class="quote-band" aria-label="Citação">
+        <p data-i18n="quote">“A música que soa quando já não fazem falta palavras.”</p>
+      </section>
+
+      <section id="contacto" class="section contact-options">
+        <div class="section__intro">
+          <p class="section-label" data-i18n="contact.label">Contacto</p>
+          <h2 data-i18n="contact.title">Falem connosco</h2>
+          <p data-i18n="contact.copy">Para dúvidas rápidas, repertório, formatos ou disponibilidade geral. Para pedir uma data, usa o botão de reserva.</p>
+        </div>
+        <div class="contact-options__grid">
+          <article>
+            <span>Email</span>
+            <h3>hello@sulponticellas.com</h3>
+            <p data-i18n="contact.email.copy">O melhor canal para pedidos com detalhes e datas.</p>
+            <a href="mailto:hello@sulponticellas.com" data-i18n="contact.email.cta">Escrever email</a>
+          </article>
+          <article>
+            <span>Instagram</span>
+            <h3>@sulponticellas</h3>
+            <p data-i18n="contact.instagram.copy">Para acompanhar atuações, bastidores e novidades.</p>
+            <a href="https://www.instagram.com/sulponticellas/" target="_blank" rel="noreferrer" data-i18n="contact.instagram.cta">Abrir Instagram</a>
+          </article>
+          <article>
+            <span data-i18n="contact.booking.kicker">Reservas</span>
+            <h3 data-i18n="contact.booking.title">Pedido de disponibilidade</h3>
+            <p data-i18n="contact.booking.copy">Se já tens uma data em mente, envia o pedido direto.</p>
+            <a href="#reservar" data-i18n="contact.booking.cta">Ir para reserva</a>
+          </article>
+        </div>
+      </section>
+
+      <section id="reservar" class="section contact">
+        <div class="section__intro">
+          <p class="section-label" data-i18n="booking.label">Reservar</p>
+          <h2 data-i18n="booking.title">Pedido de disponibilidade</h2>
+          <p data-i18n="booking.copy">Um formulário simples para percebermos a data, o tipo de evento e como vos podemos acompanhar.</p>
+        </div>
+        <form class="contact-form" data-contact-form>
+          <input type="hidden" name="intent" value="Reserva">
+          <label>
+            <span data-i18n="form.name">Nome</span>
+            <input name="name" type="text" placeholder="Os vossos nomes" data-i18n-placeholder="form.namePlaceholder" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" placeholder="correo@ejemplo.com" required>
+          </label>
+          <label>
+            <span>Telefone</span>
+            <input name="phone" type="tel" placeholder="+351 / +34 ...">
+          </label>
+          <label>
+            <span data-i18n="booking.date">Data do evento</span>
+            <input name="eventDate" type="date">
+          </label>
+          <label>
+            <span data-i18n="booking.eventType">Tipo de evento</span>
+            <select name="eventType" required>
+              <option value="" data-i18n="booking.select">Selecionar...</option>
+              <option data-i18n="booking.optionWedding">Casamento</option>
+              <option data-i18n="booking.optionCivil">Cerimónia civil</option>
+              <option data-i18n="booking.optionCocktail">Cocktail</option>
+              <option data-i18n="booking.optionPrivate">Evento privado</option>
+              <option data-i18n="booking.optionConcert">Concerto</option>
+            </select>
+          </label>
+          <label class="contact-form__full">
+            <span data-i18n="form.message">Mensagem</span>
+            <textarea name="message" placeholder="Conta-nos sobre o evento, formato desejado, repertório..." data-i18n-placeholder="booking.messagePlaceholder" required></textarea>
+          </label>
+          <button class="button button--dark" type="submit" data-i18n="booking.submit">Enviar pedido</button>
+          <p class="form-status contact-form__full" data-contact-status aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <img src="assets/logo-badge.jpg" alt="" class="footer__mark">
+      <p>Sul Ponticellas</p>
+      <span>Galicia & Portugal</span>
+      <a href="admin.html" data-i18n="footer.admin">Admin</a>
+      <a href="#inicio" data-i18n="footer.top">Voltar ao topo</a>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
