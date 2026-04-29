@@ -26,14 +26,18 @@
       <section class="admin-hero">
         <p class="section-label">Admin</p>
         <h1>Gestão de eventos, contactos e avaliações</h1>
-        <p>Este painel grava tudo no backend local. Para proteger os dados, cola aqui o token que aparece no terminal quando arrancas o servidor.</p>
+        <p>Este painel grava tudo no backend. Cada pessoa pode ter o seu próprio token, e as alterações ficam registadas num ficheiro privado para abrir no Excel.</p>
         <form class="admin-token" data-token-form>
           <label>
-            <span>Token admin</span>
+            <span>Token de acesso</span>
             <input name="token" type="password" placeholder="colar token">
           </label>
           <button class="button button--dark" type="submit">Guardar token</button>
         </form>
+        <div class="admin-session">
+          <p data-session-status>Sem sessão validada.</p>
+          <a class="admin-log-link" data-audit-download href="/api/audit.csv" hidden>Descarregar registo Excel</a>
+        </div>
       </section>
 
       <section class="admin-grid">

@@ -1,5 +1,5 @@
 const http = require("node:http");
-const { readFile, writeFile, mkdir } = require("node:fs/promises");
+const { readFile, writeFile, appendFile, mkdir } = require("node:fs/promises");
 const { existsSync } = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
@@ -10,6 +10,15 @@ const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DB_PATH = path.join(DATA_DIR, "db.json");
 const TOKEN_PATH = path.join(DATA_DIR, "admin-token.txt");
+const AUDIT_PATH = path.join(DATA_DIR, "activity-log.csv");
+
+const DEFAULT_TEAM_TOKEN_HASHES = [
+  { name: "Andre", role: "owner", hash: "8e9c1d981b419e3b148e54a48c53085f91ff802c5be64749f385d3564c6e02fb" },
+  { name: "Paula", role: "member", hash: "e5e91135b2417c1158a24fd9fa60de56c560b954dd48a9453c357a6d7bbefdbb" },
+  { name: "Violoncelo PT", role: "member", hash: "4e6f498fcea007a06712d7f09d716cb93219519c93859c1af151c1d9200eba31" },
+  { name: "Integrante 3", role: "member", hash: "2f5e6ccfd35f3efbb381d2525fc6545cb3a37a6fbdfa07a4308d5882eea192ae" },
+  { name: "Integrante 4", role: "member", hash: "f463ba7e1301413c16e2f1494261cf3964232fa407873ec30e617c28f5ab792a" },
+];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -22,6 +31,7 @@ const MIME = {
   ".webp": "image/webp",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".csv": "text/csv; charset=utf-8",
 };
 
 const initialDb = {
@@ -38,6 +48,9 @@ async function ensureDb() {
   if (!process.env.ADMIN_TOKEN && !existsSync(TOKEN_PATH)) {
     await writeFile(TOKEN_PATH, `${crypto.randomBytes(18).toString("hex")}\n`);
   }
+  if (!existsSync(AUDIT_PATH)) {
+    await writeFile(AUDIT_PATH, "createdAt,actor,role,action,entityType,entityId,summary\n");
+  }
 }
 
 async function readDb() {
@@ -51,14 +64,56 @@ async function adminToken() {
   return (await readFile(TOKEN_PATH, "utf8")).trim();
 }
 
-async function requireAdmin(req, res) {
-  const expected = await adminToken();
+function hashToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function configuredTeamTokens() {
+  const raw = process.env.TEAM_TOKEN_HASHES;
+  if (!raw) return DEFAULT_TEAM_TOKEN_HASHES;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return Object.entries(parsed).map(([name, hash]) => ({ name, hash, role: "member" }));
+  } catch {
+    return raw.split(",").map((entry) => {
+      const [name, hash, role = "member"] = entry.split(":").map((part) => part.trim());
+      return { name, hash, role };
+    });
+  }
+}
+
+async function getIdentity(req) {
   const provided = req.headers["x-admin-token"];
-  if (!provided || provided !== expected) {
-    sendError(res, 401, "Token admin inválido.");
+  if (!provided) return null;
+
+  const expected = await adminToken();
+  if (safeEqual(provided, expected)) return { name: "Andre", role: "owner" };
+
+  const providedHash = hashToken(provided);
+  const member = configuredTeamTokens().find((item) => item.hash && safeEqual(providedHash, item.hash));
+  if (member) return { name: cleanText(member.name, "Equipa"), role: cleanText(member.role, "member") };
+
+  return null;
+}
+
+async function requireAdmin(req, res, options = {}) {
+  const identity = await getIdentity(req);
+  if (!identity) {
+    sendError(res, 401, "Token inválido.");
     return false;
   }
-  return true;
+  if (options.ownerOnly && identity.role !== "owner") {
+    sendError(res, 403, "Esta ação está reservada ao token principal.");
+    return false;
+  }
+  return identity;
 }
 
 async function writeDb(db) {
@@ -76,13 +131,26 @@ function sendJson(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function sendCsv(res, status, filename, content) {
+  res.writeHead(status, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(content);
+}
+
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
 }
 
 async function readBody(req) {
   let raw = "";
-  for await (const chunk of req) raw += chunk;
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 1024 * 1024) throw new Error("Pedido demasiado grande.");
+  }
   if (!raw) return {};
   try {
     return JSON.parse(raw);
@@ -99,6 +167,26 @@ function cleanText(value, fallback = "") {
   return String(value ?? fallback).trim();
 }
 
+function csv(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+async function logAudit(actor, action, entityType, entityId, summary) {
+  await ensureDb();
+  const row = [
+    new Date().toISOString(),
+    actor?.name || "desconhecido",
+    actor?.role || "",
+    action,
+    entityType,
+    entityId,
+    summary,
+  ]
+    .map(csv)
+    .join(",");
+  await appendFile(AUDIT_PATH, `${row}\n`);
+}
+
 function publicEvents(events) {
   const today = new Date().toISOString().slice(0, 10);
   return events
@@ -109,6 +197,18 @@ function publicEvents(events) {
 async function handleApi(req, res, url) {
   const db = await readDb();
 
+  if (req.method === "GET" && url.pathname === "/api/me") {
+    const identity = await requireAdmin(req, res);
+    if (!identity) return;
+    return sendJson(res, 200, { user: identity });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/audit.csv") {
+    const identity = await requireAdmin(req, res, { ownerOnly: true });
+    if (!identity) return;
+    return sendCsv(res, 200, "sul-ponticellas-activity-log.csv", await readFile(AUDIT_PATH, "utf8"));
+  }
+
   if (req.method === "GET" && url.pathname === "/api/events") {
     const admin = url.searchParams.get("admin") === "1";
     if (admin && !(await requireAdmin(req, res))) return;
@@ -117,7 +217,8 @@ async function handleApi(req, res, url) {
   }
 
   if (req.method === "POST" && url.pathname === "/api/events") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res);
+    if (!actor) return;
     const body = await readBody(req);
     const title = cleanText(body.title);
     const date = cleanText(body.date);
@@ -140,12 +241,14 @@ async function handleApi(req, res, url) {
 
     db.events.push(event);
     await writeDb(db);
+    await logAudit(actor, "create", "event", event.id, `${event.title} (${event.date})`);
     return sendJson(res, 201, { event });
   }
 
   const eventMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
   if (eventMatch && req.method === "PUT") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res);
+    if (!actor) return;
     const body = await readBody(req);
     const event = db.events.find((item) => item.id === eventMatch[1]);
     if (!event) return sendError(res, 404, "Evento não encontrado.");
@@ -165,15 +268,19 @@ async function handleApi(req, res, url) {
     });
 
     await writeDb(db);
+    await logAudit(actor, "update", "event", event.id, `${event.title} (${event.date})`);
     return sendJson(res, 200, { event });
   }
 
   if (eventMatch && req.method === "DELETE") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res);
+    if (!actor) return;
     const before = db.events.length;
+    const removed = db.events.find((item) => item.id === eventMatch[1]);
     db.events = db.events.filter((item) => item.id !== eventMatch[1]);
     if (db.events.length === before) return sendError(res, 404, "Evento não encontrado.");
     await writeDb(db);
+    await logAudit(actor, "delete", "event", eventMatch[1], removed?.title || "Evento apagado");
     return sendJson(res, 200, { ok: true });
   }
 
@@ -204,23 +311,26 @@ async function handleApi(req, res, url) {
   }
 
   if (req.method === "GET" && url.pathname === "/api/inquiries") {
-    if (!(await requireAdmin(req, res))) return;
+    if (!(await requireAdmin(req, res, { ownerOnly: true }))) return;
     return sendJson(res, 200, { inquiries: db.inquiries });
   }
 
   const inquiryMatch = url.pathname.match(/^\/api\/inquiries\/([^/]+)$/);
   if (inquiryMatch && req.method === "DELETE") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res, { ownerOnly: true });
+    if (!actor) return;
     const before = db.inquiries.length;
+    const removed = db.inquiries.find((item) => item.id === inquiryMatch[1]);
     db.inquiries = db.inquiries.filter((item) => item.id !== inquiryMatch[1]);
     if (db.inquiries.length === before) return sendError(res, 404, "Pedido não encontrado.");
     await writeDb(db);
+    await logAudit(actor, "delete", "inquiry", inquiryMatch[1], removed?.name || "Pedido apagado");
     return sendJson(res, 200, { ok: true });
   }
 
   if (req.method === "GET" && url.pathname === "/api/reviews") {
     const admin = url.searchParams.get("admin") === "1";
-    if (admin && !(await requireAdmin(req, res))) return;
+    if (admin && !(await requireAdmin(req, res, { ownerOnly: true }))) return;
     const reviews = (admin ? db.reviews : db.reviews.filter((review) => review.approved))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return sendJson(res, 200, { reviews });
@@ -252,22 +362,27 @@ async function handleApi(req, res, url) {
 
   const reviewMatch = url.pathname.match(/^\/api\/reviews\/([^/]+)$/);
   if (reviewMatch && req.method === "PUT") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res, { ownerOnly: true });
+    if (!actor) return;
     const body = await readBody(req);
     const review = db.reviews.find((item) => item.id === reviewMatch[1]);
     if (!review) return sendError(res, 404, "Avaliação não encontrada.");
     review.approved = Boolean(body.approved);
     review.updatedAt = new Date().toISOString();
     await writeDb(db);
+    await logAudit(actor, review.approved ? "approve" : "unapprove", "review", review.id, review.name);
     return sendJson(res, 200, { review });
   }
 
   if (reviewMatch && req.method === "DELETE") {
-    if (!(await requireAdmin(req, res))) return;
+    const actor = await requireAdmin(req, res, { ownerOnly: true });
+    if (!actor) return;
     const before = db.reviews.length;
+    const removed = db.reviews.find((item) => item.id === reviewMatch[1]);
     db.reviews = db.reviews.filter((item) => item.id !== reviewMatch[1]);
     if (db.reviews.length === before) return sendError(res, 404, "Avaliação não encontrada.");
     await writeDb(db);
+    await logAudit(actor, "delete", "review", reviewMatch[1], removed?.name || "Avaliação apagada");
     return sendJson(res, 200, { ok: true });
   }
 

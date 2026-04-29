@@ -1,4 +1,6 @@
 data/admin-token.txt
 data/db.json
+data/activity-log.csv
+data/team-tokens.local.txt
 node_modules/
 .DS_Store

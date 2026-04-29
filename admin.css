@@ -77,6 +77,29 @@
   min-width: 180px;
 }
 
+.admin-session {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.admin-session p {
+  margin: 0 !important;
+  font-size: 16px !important;
+}
+
+.admin-log-link {
+  color: var(--charcoal);
+  font-family: var(--caps);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);

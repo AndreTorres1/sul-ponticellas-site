@@ -1,5 +1,6 @@
 const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:3010" : "";
 let adminToken = localStorage.getItem("sp_admin_token") || "";
+let currentUser = null;
 
 async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -16,6 +17,8 @@ async function api(path, options = {}) {
 
 const tokenForm = document.querySelector("[data-token-form]");
 const tokenInput = tokenForm.elements.token;
+const sessionStatus = document.querySelector("[data-session-status]");
+const auditDownload = document.querySelector("[data-audit-download]");
 tokenInput.value = adminToken;
 
 tokenForm.addEventListener("submit", async (event) => {
@@ -29,6 +32,15 @@ function payload(form) {
   const data = Object.fromEntries(new FormData(form).entries());
   data.published = form.elements.published?.checked ?? false;
   return data;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function fmt(date) {
@@ -46,6 +58,24 @@ function setStatus(message, tone = "") {
   status.dataset.tone = tone;
 }
 
+function protectedMessage(message) {
+  return `<article class="admin-item"><p>${escapeHtml(message)}</p></article>`;
+}
+
+async function loadSession() {
+  if (!adminToken) {
+    currentUser = null;
+    sessionStatus.textContent = "Sem token guardado.";
+    auditDownload.hidden = true;
+    return;
+  }
+
+  const { user } = await api("/api/me");
+  currentUser = user;
+  sessionStatus.textContent = `Sessão ativa: ${user.name}${user.role === "owner" ? " · acesso principal" : ""}`;
+  auditDownload.hidden = user.role !== "owner";
+}
+
 async function loadEvents() {
   const target = document.querySelector("[data-admin-events]");
   const { events } = await api("/api/events?admin=1");
@@ -57,16 +87,16 @@ async function loadEvents() {
             <article class="admin-item">
               <div class="admin-item__top">
                 <div>
-                  <small>${fmt(event.date)}${event.time ? ` · ${event.time}` : ""}</small>
-                  <h3>${event.title}</h3>
+                  <small>${escapeHtml(fmt(event.date))}${event.time ? ` · ${escapeHtml(event.time)}` : ""}</small>
+                  <h3>${escapeHtml(event.title)}</h3>
                 </div>
                 <span class="admin-badge${event.published ? "" : " admin-badge--muted"}">${event.published ? "Publicado" : "Oculto"}</span>
               </div>
-              <p>${event.venue || "Sem local"}${event.city ? `, ${event.city}` : ""}</p>
-              ${event.description ? `<p>${event.description}</p>` : ""}
+              <p>${escapeHtml(event.venue || "Sem local")}${event.city ? `, ${escapeHtml(event.city)}` : ""}</p>
+              ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ""}
               <div class="admin-item__actions">
-                <button class="admin-mini-button" data-toggle-event="${event.id}" data-published="${event.published ? "0" : "1"}">${event.published ? "Ocultar" : "Publicar"}</button>
-                <button class="admin-mini-button admin-mini-button--danger" data-delete-event="${event.id}">Apagar</button>
+                <button class="admin-mini-button" data-toggle-event="${escapeHtml(event.id)}" data-published="${event.published ? "0" : "1"}">${event.published ? "Ocultar" : "Publicar"}</button>
+                <button class="admin-mini-button admin-mini-button--danger" data-delete-event="${escapeHtml(event.id)}">Apagar</button>
               </div>
             </article>
           `,
@@ -77,7 +107,13 @@ async function loadEvents() {
 
 async function loadInquiries() {
   const target = document.querySelector("[data-admin-inquiries]");
-  const { inquiries } = await api("/api/inquiries");
+  let inquiries = [];
+  try {
+    ({ inquiries } = await api("/api/inquiries"));
+  } catch (error) {
+    target.innerHTML = protectedMessage(error.message);
+    return;
+  }
   target.innerHTML = inquiries.length
     ? inquiries
         .map(
@@ -85,16 +121,16 @@ async function loadInquiries() {
             <article class="admin-item">
               <div class="admin-item__top">
                 <div>
-                  <small>${new Date(item.createdAt).toLocaleString("pt-PT")}</small>
-                  <h3>${item.name}</h3>
+                  <small>${escapeHtml(new Date(item.createdAt).toLocaleString("pt-PT"))}</small>
+                  <h3>${escapeHtml(item.name)}</h3>
                 </div>
-                <span class="admin-badge">${item.intent}</span>
+                <span class="admin-badge">${escapeHtml(item.intent)}</span>
               </div>
-              <p>${item.email}${item.phone ? ` · ${item.phone}` : ""}</p>
-              <p>${item.eventType || "Sem tipo"}${item.eventDate ? ` · ${fmt(item.eventDate)}` : ""}</p>
-              <p>${item.message}</p>
+              <p>${escapeHtml(item.email)}${item.phone ? ` · ${escapeHtml(item.phone)}` : ""}</p>
+              <p>${escapeHtml(item.eventType || "Sem tipo")}${item.eventDate ? ` · ${escapeHtml(fmt(item.eventDate))}` : ""}</p>
+              <p>${escapeHtml(item.message)}</p>
               <div class="admin-item__actions">
-                <button class="admin-mini-button admin-mini-button--danger" data-delete-inquiry="${item.id}">Apagar</button>
+                <button class="admin-mini-button admin-mini-button--danger" data-delete-inquiry="${escapeHtml(item.id)}">Apagar</button>
               </div>
             </article>
           `,
@@ -105,7 +141,13 @@ async function loadInquiries() {
 
 async function loadReviews() {
   const target = document.querySelector("[data-admin-reviews]");
-  const { reviews } = await api("/api/reviews?admin=1");
+  let reviews = [];
+  try {
+    ({ reviews } = await api("/api/reviews?admin=1"));
+  } catch (error) {
+    target.innerHTML = protectedMessage(error.message);
+    return;
+  }
   target.innerHTML = reviews.length
     ? reviews
         .map(
@@ -113,16 +155,16 @@ async function loadReviews() {
             <article class="admin-item">
               <div class="admin-item__top">
                 <div>
-                  <small>${"★★★★★".slice(0, review.rating)} · ${new Date(review.createdAt).toLocaleDateString("pt-PT")}</small>
-                  <h3>${review.name}</h3>
+                  <small>${"★★★★★".slice(0, review.rating)} · ${escapeHtml(new Date(review.createdAt).toLocaleDateString("pt-PT"))}</small>
+                  <h3>${escapeHtml(review.name)}</h3>
                 </div>
                 <span class="admin-badge${review.approved ? "" : " admin-badge--muted"}">${review.approved ? "Aprovada" : "Pendente"}</span>
               </div>
-              <p>${review.event || "Sem evento"}</p>
-              <p>${review.message}</p>
+              <p>${escapeHtml(review.event || "Sem evento")}</p>
+              <p>${escapeHtml(review.message)}</p>
               <div class="admin-item__actions">
-                <button class="admin-mini-button" data-review="${review.id}" data-approved="${review.approved ? "0" : "1"}">${review.approved ? "Retirar" : "Aprovar"}</button>
-                <button class="admin-mini-button admin-mini-button--danger" data-delete-review="${review.id}">Apagar</button>
+                <button class="admin-mini-button" data-review="${escapeHtml(review.id)}" data-approved="${review.approved ? "0" : "1"}">${review.approved ? "Retirar" : "Aprovar"}</button>
+                <button class="admin-mini-button admin-mini-button--danger" data-delete-review="${escapeHtml(review.id)}">Apagar</button>
               </div>
             </article>
           `,
@@ -132,22 +174,46 @@ async function loadReviews() {
 }
 
 async function refresh() {
+  await loadSession();
   await Promise.all([loadEvents(), loadInquiries(), loadReviews()]);
 }
 
 document.querySelector("[data-event-form]").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const form = event.currentTarget;
   try {
     setStatus("A guardar...", "muted");
     await api("/api/events", {
       method: "POST",
-      body: JSON.stringify(payload(event.currentTarget)),
+      body: JSON.stringify(payload(form)),
     });
-    event.currentTarget.reset();
-    event.currentTarget.elements.country.value = "España";
-    event.currentTarget.elements.published.checked = true;
+    form.reset();
+    form.elements.country.value = "España";
+    form.elements.published.checked = true;
     setStatus("Evento adicionado.", "success");
     await loadEvents();
+  } catch (error) {
+    setStatus(error.message, "error");
+  }
+});
+
+auditDownload.addEventListener("click", async (event) => {
+  event.preventDefault();
+  try {
+    const response = await fetch(`${API_BASE}/api/audit.csv`, {
+      headers: adminToken ? { "x-admin-token": adminToken } : {},
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Não foi possível descarregar o registo.");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sul-ponticellas-activity-log.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   } catch (error) {
     setStatus(error.message, "error");
   }
@@ -195,7 +261,9 @@ document.addEventListener("click", async (event) => {
 });
 
 refresh().catch((error) => {
+  sessionStatus.textContent = error.message;
+  auditDownload.hidden = true;
   document.querySelectorAll(".admin-list").forEach((target) => {
-    target.innerHTML = `<article class="admin-item"><p>${error.message}</p></article>`;
+    target.innerHTML = protectedMessage(error.message);
   });
 });
