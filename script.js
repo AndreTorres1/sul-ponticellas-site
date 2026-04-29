@@ -287,8 +287,16 @@ function applyLanguage(lang) {
   });
 }
 
+let headerFrame = null;
+
 const syncHeader = () => {
+  headerFrame = null;
   header.classList.toggle("is-compact", window.scrollY > 24);
+};
+
+const requestHeaderSync = () => {
+  if (headerFrame) return;
+  headerFrame = window.requestAnimationFrame(syncHeader);
 };
 
 navToggle.addEventListener("click", () => {
@@ -334,7 +342,7 @@ const observer = new IntersectionObserver(
 
 sections.forEach((section) => observer.observe(section));
 syncHeader();
-window.addEventListener("scroll", syncHeader, { passive: true });
+window.addEventListener("scroll", requestHeaderSync, { passive: true });
 
 async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {

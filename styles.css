@@ -15,6 +15,7 @@
   --caps: "Cinzel", "Times New Roman", serif;
   --body: "EB Garamond", Georgia, serif;
   --shadow: 0 16px 60px rgba(42, 31, 24, 0.12);
+  --header-offset: 78px;
 }
 
 * {
@@ -22,6 +23,7 @@
 }
 
 html {
+  scroll-padding-top: var(--header-offset);
   scroll-behavior: smooth;
 }
 
@@ -37,6 +39,7 @@ body {
 img {
   display: block;
   max-width: 100%;
+  height: auto;
 }
 
 a {
@@ -72,8 +75,9 @@ legend {
   padding: 10px clamp(18px, 4vw, 56px);
   background: rgba(250, 243, 238, 0.92);
   border-bottom: 1px solid rgba(237, 213, 197, 0.85);
-  backdrop-filter: blur(16px);
-  transition: min-height 220ms ease, box-shadow 220ms ease;
+  backdrop-filter: blur(12px);
+  transform: translateZ(0);
+  transition: min-height 160ms ease, box-shadow 160ms ease;
 }
 
 .site-header.is-compact {
@@ -922,12 +926,16 @@ legend {
   margin-top: 36px;
 }
 
-.stats span {
+.stats > span {
+  display: grid;
+  place-items: center;
   min-width: 128px;
+  min-height: 118px;
   padding: 16px 20px;
   background: var(--ivory);
   border: 1px solid var(--blush-deep);
   border-radius: 4px;
+  text-align: center;
   color: var(--muted);
   font-family: var(--caps);
   font-size: 11px;
@@ -941,7 +949,15 @@ legend {
   font-family: var(--display);
   font-size: 44px;
   font-weight: 300;
-  line-height: 0.92;
+  line-height: 1;
+}
+
+.stats > span > span {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  letter-spacing: 0.14em;
 }
 
 .about__image-stack {
@@ -1130,7 +1146,7 @@ legend {
   color: var(--ivory);
   background:
     linear-gradient(rgba(42, 31, 24, 0.64), rgba(42, 31, 24, 0.64)),
-    url("assets/group-bw-3.jpg") center 38% / cover fixed;
+    url("assets/group-bw-3.jpg") center 38% / cover;
   text-align: center;
 }
 
@@ -1187,7 +1203,12 @@ legend {
   font-size: 30px;
   font-weight: 400;
   line-height: 1.05;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.contact-options__grid .contact-email {
+  font-size: clamp(25px, 2.5vw, 30px);
+  letter-spacing: 0;
 }
 
 .contact-options__grid p {
@@ -1375,6 +1396,10 @@ legend {
 }
 
 @media (max-width: 980px) {
+  :root {
+    --header-offset: 70px;
+  }
+
   .nav-toggle {
     display: block;
   }
@@ -1466,6 +1491,16 @@ legend {
     margin-bottom: 0;
   }
 
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stats > span {
+    min-width: 0;
+  }
+
   .musician-card {
     grid-template-columns: 1fr;
   }
@@ -1484,6 +1519,10 @@ legend {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --header-offset: 66px;
+  }
+
   body {
     font-size: 17px;
   }
@@ -1533,6 +1572,22 @@ legend {
   .repertoire h2,
   .about h2 {
     font-size: 44px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .stats > span {
+    min-height: 94px;
+    padding: 12px 8px;
+    font-size: 9px;
+  }
+
+  .stats strong {
+    font-size: 34px;
   }
 
   .gallery {
@@ -1610,5 +1665,19 @@ legend {
 
   .review-form {
     padding: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
