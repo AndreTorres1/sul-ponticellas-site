@@ -19,9 +19,9 @@ const SITE_URL = cleanEnv(process.env.SITE_URL) || "https://sul-ponticellas-site
 const DEFAULT_TEAM_TOKEN_HASHES = [
   { name: "Andre", role: "owner", hash: "8e9c1d981b419e3b148e54a48c53085f91ff802c5be64749f385d3564c6e02fb" },
   { name: "Paula", role: "member", hash: "e5e91135b2417c1158a24fd9fa60de56c560b954dd48a9453c357a6d7bbefdbb" },
-  { name: "Violoncelo PT", role: "member", hash: "4e6f498fcea007a06712d7f09d716cb93219519c93859c1af151c1d9200eba31" },
-  { name: "Integrante 3", role: "member", hash: "2f5e6ccfd35f3efbb381d2525fc6545cb3a37a6fbdfa07a4308d5882eea192ae" },
-  { name: "Integrante 4", role: "member", hash: "f463ba7e1301413c16e2f1494261cf3964232fa407873ec30e617c28f5ab792a" },
+  { name: "Jéssica", role: "member", hash: "4e6f498fcea007a06712d7f09d716cb93219519c93859c1af151c1d9200eba31" },
+  { name: "Lorena", role: "member", hash: "2f5e6ccfd35f3efbb381d2525fc6545cb3a37a6fbdfa07a4308d5882eea192ae" },
+  { name: "Verónica", role: "member", hash: "f463ba7e1301413c16e2f1494261cf3964232fa407873ec30e617c28f5ab792a" },
 ];
 
 const MIME = {

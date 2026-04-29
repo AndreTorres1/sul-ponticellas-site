@@ -1,18 +1,36 @@
-const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:3010" : "";
+const API_BASES =
+  window.location.protocol === "file:"
+    ? ["http://127.0.0.1:3010", "http://127.0.0.1:3013", "http://127.0.0.1:3011", "http://127.0.0.1:3012"]
+    : [""];
 let adminToken = localStorage.getItem("sp_admin_token") || "";
 let currentUser = null;
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(adminToken ? { "x-admin-token": adminToken } : {}),
-    },
-    ...options,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Pedido falhou.");
-  return data;
+  let lastError;
+  for (const base of API_BASES) {
+    try {
+      const response = await fetch(`${base}${path}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminToken ? { "x-admin-token": adminToken } : {}),
+        },
+        ...options,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Pedido falhou.");
+      return data;
+    } catch (error) {
+      lastError = error;
+      const canTryAnotherLocalPort =
+        window.location.protocol === "file:" && String(error.message).includes("Token inválido");
+      const isNetworkError =
+        error instanceof TypeError ||
+        String(error.message).includes("Failed to fetch") ||
+        String(error.message).includes("Load failed");
+      if (!isNetworkError && !canTryAnotherLocalPort) break;
+    }
+  }
+  throw lastError || new Error("Pedido falhou.");
 }
 
 const tokenForm = document.querySelector("[data-token-form]");
