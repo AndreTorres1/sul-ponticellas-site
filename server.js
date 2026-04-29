@@ -14,6 +14,7 @@ const AUDIT_PATH = path.join(DATA_DIR, "activity-log.csv");
 const GOOGLE_SHEETS_AUDIT_URL = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_URL);
 const GOOGLE_SHEETS_AUDIT_SECRET = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_SECRET);
 const GOOGLE_SHEETS_PRIVATE_URL = cleanEnv(process.env.GOOGLE_SHEETS_PRIVATE_URL);
+const SITE_URL = cleanEnv(process.env.SITE_URL) || "https://sul-ponticellas-site.onrender.com";
 
 const DEFAULT_TEAM_TOKEN_HASHES = [
   { name: "Andre", role: "owner", hash: "8e9c1d981b419e3b148e54a48c53085f91ff802c5be64749f385d3564c6e02fb" },
@@ -150,6 +151,14 @@ function sendCsv(res, status, filename, content) {
 
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
+}
+
+function sendText(res, status, contentType, content) {
+  res.writeHead(status, {
+    "Content-Type": `${contentType}; charset=utf-8`,
+    "Cache-Control": "public, max-age=3600",
+  });
+  res.end(content);
 }
 
 async function readBody(req) {
@@ -442,6 +451,22 @@ async function handleApi(req, res, url) {
 
 async function serveStatic(req, res, url) {
   let pathname = decodeURIComponent(url.pathname);
+  if (pathname === "/robots.txt") {
+    return sendText(
+      res,
+      200,
+      "text/plain",
+      `User-agent: *\nAllow: /\nDisallow: /admin.html\nDisallow: /api/\nDisallow: /data/\nSitemap: ${SITE_URL}/sitemap.xml\n`
+    );
+  }
+  if (pathname === "/sitemap.xml") {
+    return sendText(
+      res,
+      200,
+      "application/xml",
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${SITE_URL}/</loc>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>\n`
+    );
+  }
   if (pathname === "/") pathname = "/index.html";
   if (pathname.startsWith("/data/")) {
     res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });

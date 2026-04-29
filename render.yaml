@@ -8,5 +8,13 @@ services:
     envVars:
       - key: HOST
         value: 0.0.0.0
+      - key: SITE_URL
+        value: https://sul-ponticellas-site.onrender.com
       - key: ADMIN_TOKEN
+        sync: false
+      - key: GOOGLE_SHEETS_AUDIT_URL
+        sync: false
+      - key: GOOGLE_SHEETS_AUDIT_SECRET
+        sync: false
+      - key: GOOGLE_SHEETS_PRIVATE_URL
         sync: false

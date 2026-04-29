@@ -87,8 +87,8 @@ const translations = {
     "musicians.title": "Quem está por trás do som",
     "musicians.copy": "Uma apresentação breve de cada integrante, para afinar à medida que recebermos os textos finais.",
     "musicians.card1.kicker": "Lorena",
-    "musicians.card1.title": "A completar",
-    "musicians.card1.copy": "Espaço reservado para a apresentação da Lorena: percurso, instrumento, estilo e aquele detalhe pessoal que ajuda os casais a sentirem quem vai tocar no seu dia.",
+    "musicians.card1.title": "Presença serena",
+    "musicians.card1.copy": "Lorena traz ao violoncelo uma presença calma, concentrada e muito musical. A sua forma de tocar acrescenta delicadeza ao grupo e ajuda a criar momentos íntimos, sentidos e cheios de intenção.",
     "musicians.card2.kicker": "Paula",
     "musicians.card2.title": "Prodígio jovem",
     "musicians.card2.copy": "A Paula tem aquela energia rara de quem parece ter nascido dentro da música. Jovem, expressiva e com uma voz incrível, acrescenta brilho, frescura e uma musicalidade muito própria ao grupo.",
@@ -211,8 +211,8 @@ const translations = {
     "musicians.title": "Quién está detrás del sonido",
     "musicians.copy": "Una breve presentación de cada integrante, para afinarla cuando tengamos los textos finales.",
     "musicians.card1.kicker": "Lorena",
-    "musicians.card1.title": "Por completar",
-    "musicians.card1.copy": "Espacio reservado para la presentación de Lorena: trayectoria, instrumento, estilo y ese detalle personal que ayuda a las parejas a sentir quién tocará en su día.",
+    "musicians.card1.title": "Presencia serena",
+    "musicians.card1.copy": "Lorena aporta al violonchelo una presencia tranquila, concentrada y muy musical. Su forma de tocar suma delicadeza al grupo y ayuda a crear momentos íntimos, sentidos y llenos de intención.",
     "musicians.card2.kicker": "Paula",
     "musicians.card2.title": "Prodigio joven",
     "musicians.card2.copy": "Paula tiene esa energía rara de quien parece haber nacido dentro de la música. Joven, expresiva y con una voz increíble, aporta brillo, frescura y una musicalidad muy propia al grupo.",
@@ -266,12 +266,20 @@ function t(key) {
   return translations[currentLang]?.[key] || translations.pt[key] || key;
 }
 
+function setMeta(selector, value) {
+  document.querySelector(selector)?.setAttribute("content", value);
+}
+
 function applyLanguage(lang) {
   currentLang = translations[lang] ? lang : "pt";
   localStorage.setItem("sp_lang", currentLang);
   document.documentElement.lang = currentLang;
   document.title = t("meta.title");
-  document.querySelector("meta[name='description']")?.setAttribute("content", t("meta.description"));
+  setMeta("meta[name='description']", t("meta.description"));
+  setMeta("meta[property='og:title']", t("meta.title"));
+  setMeta("meta[property='og:description']", t("meta.description"));
+  setMeta("meta[name='twitter:title']", t("meta.title"));
+  setMeta("meta[name='twitter:description']", t("meta.description"));
 
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
