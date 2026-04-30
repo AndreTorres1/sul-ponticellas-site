@@ -24,19 +24,23 @@
 
     <main class="admin-shell">
       <section class="admin-hero">
-        <p class="section-label">Admin</p>
-        <h1>Gestão de eventos, contactos e avaliações</h1>
-        <p>Este painel grava tudo no backend. Cada pessoa pode ter o seu próprio token, e as alterações ficam registadas num ficheiro privado para abrir no Excel.</p>
-        <form class="admin-token" data-token-form>
-          <label>
-            <span>Token de acesso</span>
-            <input name="token" type="password" placeholder="colar token">
-          </label>
-          <button class="button button--dark" type="submit">Guardar token</button>
-        </form>
-        <div class="admin-session">
-          <p data-session-status>Sem sessão validada.</p>
-          <a class="admin-log-link" data-audit-download href="/api/audit.csv" hidden>Descarregar registo Excel</a>
+        <div class="admin-hero__copy">
+          <p class="section-label">Admin</p>
+          <h1>Painel de gestão</h1>
+          <p>Eventos, pedidos e avaliações num espaço simples. As alterações ficam registadas por token.</p>
+        </div>
+        <div class="admin-login-card">
+          <form class="admin-token" data-token-form>
+            <label>
+              <span>Token de acesso</span>
+              <input name="token" type="password" placeholder="colar token">
+            </label>
+            <button class="button button--dark" type="submit">Entrar</button>
+          </form>
+          <div class="admin-session">
+            <p data-session-status>Sem sessão validada.</p>
+            <a class="admin-log-link" data-audit-download href="/api/audit.csv" hidden>Descarregar registo Excel</a>
+          </div>
         </div>
       </section>
 
