@@ -7,7 +7,17 @@ const sections = navLinks
   .filter(Boolean);
 
 const IS_STATIC_HOST = window.location.hostname.endsWith("github.io");
-const API_BASE = window.SUL_PONTICELLAS_API || (window.location.protocol === "file:" ? "http://127.0.0.1:3010" : "");
+const API_BASES = window.SUL_PONTICELLAS_API
+  ? [window.SUL_PONTICELLAS_API]
+  : window.location.protocol === "file:"
+    ? [
+        "https://sul-ponticellas-site.onrender.com",
+        "http://127.0.0.1:3013",
+        "http://127.0.0.1:3010",
+        "http://127.0.0.1:3011",
+        "http://127.0.0.1:3012",
+      ]
+    : [""];
 const translations = {
   pt: {
     "meta.title": "Sul Ponticellas | Música ao vivo para casamentos e eventos",
@@ -353,13 +363,26 @@ syncHeader();
 window.addEventListener("scroll", requestHeaderSync, { passive: true });
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Não foi possível concluir o pedido.");
-  return data;
+  let lastError;
+  for (const base of API_BASES) {
+    try {
+      const response = await fetch(`${base}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Não foi possível concluir o pedido.");
+      return data;
+    } catch (error) {
+      lastError = error;
+      const isNetworkError =
+        error instanceof TypeError ||
+        String(error.message).includes("Failed to fetch") ||
+        String(error.message).includes("Load failed");
+      if (!isNetworkError) break;
+    }
+  }
+  throw lastError || new Error("Não consegui ligar ao backend.");
 }
 
 function formatDate(date) {
