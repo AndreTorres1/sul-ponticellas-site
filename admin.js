@@ -196,6 +196,7 @@ async function loadInquiries() {
 async function loadReviews() {
   const target = document.querySelector("[data-admin-reviews]");
   let reviews = [];
+  const canModerate = currentUser?.role === "owner";
   try {
     ({ reviews } = await api("/api/reviews?admin=1"));
   } catch (error) {
@@ -217,8 +218,12 @@ async function loadReviews() {
               <p>${escapeHtml(review.event || "Sem evento")}</p>
               <p>${escapeHtml(review.message)}</p>
               <div class="admin-item__actions">
-                <button class="admin-mini-button" data-review="${escapeHtml(review.id)}" data-approved="${review.approved ? "0" : "1"}">${review.approved ? "Retirar" : "Aprovar"}</button>
-                <button class="admin-mini-button admin-mini-button--danger" data-delete-review="${escapeHtml(review.id)}">Apagar</button>
+                ${
+                  canModerate
+                    ? `<button class="admin-mini-button" data-review="${escapeHtml(review.id)}" data-approved="${review.approved ? "0" : "1"}">${review.approved ? "Retirar" : "Aprovar"}</button>
+                       <button class="admin-mini-button admin-mini-button--danger" data-delete-review="${escapeHtml(review.id)}">Apagar</button>`
+                    : `<span class="admin-note">A aprovação fica reservada ao token principal.</span>`
+                }
               </div>
             </article>
           `,
@@ -229,6 +234,11 @@ async function loadReviews() {
 
 async function refresh() {
   await loadSession();
+  await Promise.all([loadEvents(), loadInquiries(), loadReviews()]);
+}
+
+async function refreshLists() {
+  if (!adminToken || !currentUser) return;
   await Promise.all([loadEvents(), loadInquiries(), loadReviews()]);
 }
 
@@ -332,4 +342,13 @@ refresh().catch((error) => {
   document.querySelectorAll(".admin-list").forEach((target) => {
     target.innerHTML = protectedMessage(error.message);
   });
+});
+
+setInterval(() => {
+  if (document.visibilityState !== "visible") return;
+  refreshLists().catch(() => {});
+}, 30000);
+
+window.addEventListener("focus", () => {
+  refreshLists().catch(() => {});
 });

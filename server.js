@@ -240,10 +240,11 @@ async function logAudit(actor, action, entityType, entityId, summary) {
   if (!loggedToGoogle) await writeLocalAudit(record);
 }
 
-function publicEvents(events) {
+function publicEvents(events, options = {}) {
   const today = new Date().toISOString().slice(0, 10);
+  const includePast = options.includePast === true;
   return events
-    .filter((event) => event.published && event.date >= today)
+    .filter((event) => event.published && (includePast || event.date >= today))
     .sort((a, b) => `${a.date} ${a.time || ""}`.localeCompare(`${b.date} ${b.time || ""}`));
 }
 
@@ -272,7 +273,8 @@ async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/events") {
     const admin = url.searchParams.get("admin") === "1";
     if (admin && !(await requireAdmin(req, res))) return;
-    const events = admin ? db.events : publicEvents(db.events);
+    const includePast = url.searchParams.get("scope") === "all";
+    const events = admin ? db.events : publicEvents(db.events, { includePast });
     return sendJson(res, 200, { events });
   }
 
@@ -390,7 +392,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/reviews") {
     const admin = url.searchParams.get("admin") === "1";
-    if (admin && !(await requireAdmin(req, res, { ownerOnly: true }))) return;
+    if (admin && !(await requireAdmin(req, res))) return;
     const reviews = (admin ? db.reviews : db.reviews.filter((review) => review.approved))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return sendJson(res, 200, { reviews });

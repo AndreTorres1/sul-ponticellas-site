@@ -56,7 +56,10 @@ const translations = {
     "events.copy": "Uma zona viva para concertos e aparições públicas. Os eventos são atualizados no painel de administração.",
     "events.loading": "A carregar próximos eventos...",
     "events.empty": "Ainda não há próximos eventos públicos. Quando adicionares no admin, aparecem aqui automaticamente.",
-    "events.error": "Para ver eventos, inicia o backend com <code>npm start</code> dentro da pasta do site.",
+    "events.history": "Histórico de eventos",
+    "events.historyEmpty": "Ainda não há eventos anteriores publicados.",
+    "events.pastBadge": "Realizado",
+    "events.error": "Não consegui ligar ao backend para carregar a agenda.",
     "events.static": "Agenda pública em breve. Para datas e disponibilidade, fala connosco por email ou Instagram.",
     "events.tickets": "Entradas",
     "events.book": "Reservar",
@@ -180,7 +183,10 @@ const translations = {
     "events.copy": "Una zona viva para conciertos y apariciones públicas. Los eventos se actualizan desde el panel de administración.",
     "events.loading": "Cargando próximos eventos...",
     "events.empty": "Todavía no hay próximos eventos públicos. Cuando los añadas en el admin, aparecerán aquí automáticamente.",
-    "events.error": "Para ver eventos, inicia el backend con <code>npm start</code> dentro de la carpeta del sitio.",
+    "events.history": "Historial de eventos",
+    "events.historyEmpty": "Todavía no hay eventos anteriores publicados.",
+    "events.pastBadge": "Celebrado",
+    "events.error": "No he podido conectar con el backend para cargar la agenda.",
     "events.static": "Agenda pública próximamente. Para fechas y disponibilidad, escríbenos por email o Instagram.",
     "events.tickets": "Entradas",
     "events.book": "Reservar",
@@ -395,6 +401,52 @@ function formatDate(date) {
   };
 }
 
+function eventSortValue(event) {
+  return `${event.date || ""} ${event.time || ""}`;
+}
+
+function isPastEvent(event) {
+  const today = new Date().toISOString().slice(0, 10);
+  return event.date < today;
+}
+
+function eventEmpty(message) {
+  return `
+    <article class="empty-state">
+      <p>${message}</p>
+    </article>
+  `;
+}
+
+function eventCard(event, options = {}) {
+  const date = formatDate(event.date);
+  const past = options.past === true;
+  const action = past
+    ? `<span class="event-card__status">${t("events.pastBadge")}</span>`
+    : event.ticketUrl
+      ? `<a class="event-card__link" href="${escapeHtml(event.ticketUrl)}" target="_blank" rel="noreferrer">${t("events.tickets")}</a>`
+      : `<a class="event-card__link" href="#reservar">${t("events.book")}</a>`;
+
+  return `
+    <article class="event-card${past ? " event-card--past" : ""}">
+      <div class="event-card__date">
+        <strong>${date.day}</strong>
+        <span>${date.month}</span>
+      </div>
+      <div class="event-card__body">
+        <p>${escapeHtml(date.weekday)}${event.time ? ` · ${escapeHtml(event.time)}` : ""}</p>
+        <h3>${escapeHtml(event.title)}</h3>
+        <span>${escapeHtml(event.venue)}${event.city ? `, ${escapeHtml(event.city)}` : ""}</span>
+        ${event.description ? `<p class="event-card__description">${escapeHtml(event.description)}</p>` : ""}
+      </div>
+      <div class="event-card__meta">
+        <span>${escapeHtml(event.price || t("events.priceFallback"))}</span>
+        ${action}
+      </div>
+    </article>
+  `;
+}
+
 async function renderEvents() {
   const list = document.querySelector("[data-events-list]");
   if (!list) return;
@@ -409,43 +461,25 @@ async function renderEvents() {
   }
 
   try {
-    const { events } = await api("/api/events");
-    if (!events.length) {
-      list.innerHTML = `
-        <article class="empty-state">
-          <p>${t("events.empty")}</p>
-        </article>
-      `;
-      return;
-    }
+    const { events } = await api("/api/events?scope=all");
+    const upcoming = events.filter((event) => !isPastEvent(event)).sort((a, b) => eventSortValue(a).localeCompare(eventSortValue(b)));
+    const history = events.filter(isPastEvent).sort((a, b) => eventSortValue(b).localeCompare(eventSortValue(a)));
 
-    list.innerHTML = events
-      .map((event) => {
-        const date = formatDate(event.date);
-        const action = event.ticketUrl
-          ? `<a class="event-card__link" href="${event.ticketUrl}" target="_blank" rel="noreferrer">${t("events.tickets")}</a>`
-          : `<a class="event-card__link" href="#reservar">${t("events.book")}</a>`;
-
-        return `
-          <article class="event-card">
-            <div class="event-card__date">
-              <strong>${date.day}</strong>
-              <span>${date.month}</span>
-            </div>
-            <div class="event-card__body">
-              <p>${date.weekday}${event.time ? ` · ${event.time}` : ""}</p>
-              <h3>${event.title}</h3>
-              <span>${event.venue}${event.city ? `, ${event.city}` : ""}</span>
-              ${event.description ? `<p class="event-card__description">${event.description}</p>` : ""}
-            </div>
-            <div class="event-card__meta">
-              <span>${event.price || t("events.priceFallback")}</span>
-              ${action}
-            </div>
-          </article>
-        `;
-      })
-      .join("");
+    list.innerHTML = `
+      <section class="events-group">
+        <div class="events-list events-list--upcoming">
+          ${upcoming.length ? upcoming.map((event) => eventCard(event)).join("") : eventEmpty(t("events.empty"))}
+        </div>
+      </section>
+      <section class="events-group events-group--history">
+        <div class="events-group__header">
+          <h3>${t("events.history")}</h3>
+        </div>
+        <div class="events-list events-list--history">
+          ${history.length ? history.map((event) => eventCard(event, { past: true })).join("") : eventEmpty(t("events.historyEmpty"))}
+        </div>
+      </section>
+    `;
   } catch (error) {
     list.innerHTML = `
       <article class="empty-state">
@@ -488,10 +522,10 @@ async function renderReviews() {
         (review) => `
           <article class="review-card">
             <div class="review-card__stars" aria-label="${review.rating} ${t("reviews.stars")}">${stars(review.rating)}</div>
-            <p>“${review.message}”</p>
+            <p>“${escapeHtml(review.message)}”</p>
             <footer>
-              <strong>${review.name}</strong>
-              <span>${review.event || t("reviews.defaultEvent")}</span>
+              <strong>${escapeHtml(review.name)}</strong>
+              <span>${escapeHtml(review.event || t("reviews.defaultEvent"))}</span>
             </footer>
           </article>
         `,
@@ -513,6 +547,15 @@ function formPayload(form) {
 function setStatus(element, message, tone = "") {
   element.textContent = message;
   element.dataset.tone = tone;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 const carousel = document.querySelector("[data-carousel]");
@@ -605,3 +648,14 @@ if (reviewForm) {
 applyLanguage(currentLang);
 renderEvents();
 renderReviews();
+
+setInterval(() => {
+  if (document.visibilityState !== "visible") return;
+  renderEvents();
+  renderReviews();
+}, 30000);
+
+window.addEventListener("focus", () => {
+  renderEvents();
+  renderReviews();
+});
