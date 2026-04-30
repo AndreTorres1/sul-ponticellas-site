@@ -1,9 +1,23 @@
 const API_BASES =
   window.location.protocol === "file:"
-    ? ["http://127.0.0.1:3010", "http://127.0.0.1:3013", "http://127.0.0.1:3011", "http://127.0.0.1:3012"]
+    ? [
+        "http://127.0.0.1:3013",
+        "http://127.0.0.1:3010",
+        "http://127.0.0.1:3011",
+        "http://127.0.0.1:3012",
+        "https://sul-ponticellas-site.onrender.com",
+      ]
     : [""];
-let adminToken = localStorage.getItem("sp_admin_token") || "";
+let adminToken = normalizeToken(localStorage.getItem("sp_admin_token") || "");
 let currentUser = null;
+
+function normalizeToken(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const lastLine = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1) || raw;
+  const afterColon = lastLine.includes(":") ? lastLine.split(":").pop().trim() : lastLine;
+  return afterColon.split(/\s+/).at(-1) || "";
+}
 
 async function api(path, options = {}) {
   let lastError;
@@ -41,7 +55,8 @@ tokenInput.value = adminToken;
 
 tokenForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  adminToken = tokenInput.value.trim();
+  adminToken = normalizeToken(tokenInput.value);
+  tokenInput.value = adminToken;
   localStorage.setItem("sp_admin_token", adminToken);
   await refresh();
 });
@@ -233,9 +248,20 @@ auditDownload.addEventListener("click", async (event) => {
   if (auditDownload.target === "_blank") return;
   event.preventDefault();
   try {
-    const response = await fetch(`${API_BASE}/api/audit.csv`, {
-      headers: adminToken ? { "x-admin-token": adminToken } : {},
-    });
+    let response;
+    let lastError;
+    for (const base of API_BASES) {
+      try {
+        response = await fetch(`${base}/api/audit.csv`, {
+          headers: adminToken ? { "x-admin-token": adminToken } : {},
+        });
+        if (response.ok) break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (!response && lastError) throw lastError;
+    if (!response) throw new Error("Não foi possível descarregar o registo.");
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data.error || "Não foi possível descarregar o registo.");
