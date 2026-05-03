@@ -11,11 +11,11 @@ const API_BASES = window.SUL_PONTICELLAS_API
   ? [window.SUL_PONTICELLAS_API]
   : window.location.protocol === "file:"
     ? [
-        "https://sul-ponticellas-site.onrender.com",
         "http://127.0.0.1:3013",
         "http://127.0.0.1:3010",
         "http://127.0.0.1:3011",
         "http://127.0.0.1:3012",
+        "https://sul-ponticellas-site.onrender.com",
       ]
     : [""];
 const translations = {

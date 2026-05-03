@@ -1,11 +1,11 @@
 const API_BASES =
   window.location.protocol === "file:"
     ? [
-        "https://sul-ponticellas-site.onrender.com",
         "http://127.0.0.1:3013",
         "http://127.0.0.1:3010",
         "http://127.0.0.1:3011",
         "http://127.0.0.1:3012",
+        "https://sul-ponticellas-site.onrender.com",
       ]
     : [""];
 let adminToken = normalizeToken(localStorage.getItem("sp_admin_token") || "");

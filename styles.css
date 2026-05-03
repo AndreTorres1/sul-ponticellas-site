@@ -1228,7 +1228,7 @@ legend {
   color: var(--ivory);
   background:
     linear-gradient(rgba(42, 31, 24, 0.64), rgba(42, 31, 24, 0.64)),
-    url("assets/group-bw-3.jpg") center 38% / cover;
+    url("assets/group-bw-3.webp") center 38% / cover;
   text-align: center;
 }
 

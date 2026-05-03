@@ -55,5 +55,21 @@ Variáveis usadas em produção:
 - `GOOGLE_SHEETS_AUDIT_URL`: URL da App da Web no Google Apps Script.
 - `GOOGLE_SHEETS_AUDIT_SECRET`: segredo partilhado com o Apps Script.
 - `GOOGLE_SHEETS_PRIVATE_URL`: link privado da Google Sheet.
+- `SUPABASE_URL`: URL do projeto Supabase para guardar dados de forma persistente.
+- `SUPABASE_SERVICE_ROLE_KEY`: chave `service_role` do Supabase, guardada apenas no Render.
 
 As avaliações entram como pendentes e só ficam públicas quando forem aprovadas no admin.
+
+## Base de dados persistente
+
+Sem Supabase, o backend usa `data/db.json`, bom para testar localmente mas frágil em produção grátis. Para produção:
+
+1. Cria um projeto no Supabase.
+2. Abre `SQL Editor`.
+3. Cola e executa o conteúdo de `supabase.sql`.
+4. Em `Project Settings > API`, copia:
+   - `Project URL` para `SUPABASE_URL`.
+   - `service_role secret` para `SUPABASE_SERVICE_ROLE_KEY`.
+5. No Render, adiciona estas duas variáveis ao serviço e faz redeploy.
+
+Depois disso, eventos, pedidos e avaliações ficam guardados fora do Render e deixam de desaparecer em deploys/restarts.

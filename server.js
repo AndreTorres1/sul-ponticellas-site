@@ -15,11 +15,14 @@ const GOOGLE_SHEETS_AUDIT_URL = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_URL);
 const GOOGLE_SHEETS_AUDIT_SECRET = cleanEnv(process.env.GOOGLE_SHEETS_AUDIT_SECRET);
 const GOOGLE_SHEETS_PRIVATE_URL = cleanEnv(process.env.GOOGLE_SHEETS_PRIVATE_URL);
 const SITE_URL = cleanEnv(process.env.SITE_URL) || "https://sul-ponticellas-site.onrender.com";
+const SUPABASE_URL = cleanEnv(process.env.SUPABASE_URL);
+const SUPABASE_SERVICE_ROLE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 
 const DEFAULT_TEAM_TOKEN_HASHES = [
   { name: "Andre", role: "owner", hash: "8e9c1d981b419e3b148e54a48c53085f91ff802c5be64749f385d3564c6e02fb" },
-  { name: "Paula", role: "member", hash: "e5e91135b2417c1158a24fd9fa60de56c560b954dd48a9453c357a6d7bbefdbb" },
-  { name: "Jéssica", role: "member", hash: "4e6f498fcea007a06712d7f09d716cb93219519c93859c1af151c1d9200eba31" },
+  { name: "Paula", role: "member", hash: "5d1b43856153aa1ca3a20fffa6b520d80c4afc5d1578a1f94f224129ebc8f1a7" },
+  { name: "Jéssica", role: "member", hash: "9b7502ae7839a80421ef36d6892a213618d08aacf7533b770621e56cf76d561b" },
   { name: "Lorena", role: "member", hash: "2f5e6ccfd35f3efbb381d2525fc6545cb3a37a6fbdfa07a4308d5882eea192ae" },
   { name: "Verónica", role: "member", hash: "f463ba7e1301413c16e2f1494261cf3964232fa407873ec30e617c28f5ab792a" },
 ];
@@ -255,9 +258,258 @@ function publicEvents(events, options = {}) {
     .sort((a, b) => `${a.date} ${a.time || ""}`.localeCompare(`${b.date} ${b.time || ""}`));
 }
 
-async function handleApi(req, res, url) {
-  const db = await readDb();
+function sortByCreatedDesc(items) {
+  return items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
 
+function eventRowToRecord(row) {
+  return {
+    id: row.id,
+    title: row.title || "",
+    venue: row.venue || "",
+    city: row.city || "",
+    country: row.country || "",
+    date: row.date || "",
+    time: row.time || "",
+    price: row.price || "",
+    description: row.description || "",
+    ticketUrl: row.ticket_url || "",
+    published: Boolean(row.published),
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
+  };
+}
+
+function eventRecordToRow(event) {
+  return {
+    id: event.id,
+    title: event.title,
+    venue: event.venue,
+    city: event.city,
+    country: event.country,
+    date: event.date,
+    time: event.time,
+    price: event.price,
+    description: event.description,
+    ticket_url: event.ticketUrl,
+    published: event.published,
+    created_at: event.createdAt,
+    updated_at: event.updatedAt,
+  };
+}
+
+function inquiryRowToRecord(row) {
+  return {
+    id: row.id,
+    intent: row.intent || "",
+    name: row.name || "",
+    email: row.email || "",
+    eventDate: row.event_date || "",
+    eventType: row.event_type || "",
+    phone: row.phone || "",
+    message: row.message || "",
+    createdAt: row.created_at || "",
+  };
+}
+
+function inquiryRecordToRow(inquiry) {
+  return {
+    id: inquiry.id,
+    intent: inquiry.intent,
+    name: inquiry.name,
+    email: inquiry.email,
+    event_date: inquiry.eventDate,
+    event_type: inquiry.eventType,
+    phone: inquiry.phone,
+    message: inquiry.message,
+    created_at: inquiry.createdAt,
+  };
+}
+
+function reviewRowToRecord(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    event: row.event || "",
+    rating: Number(row.rating),
+    message: row.message || "",
+    approved: Boolean(row.approved),
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
+  };
+}
+
+function reviewRecordToRow(review) {
+  return {
+    id: review.id,
+    name: review.name,
+    event: review.event,
+    rating: review.rating,
+    message: review.message,
+    approved: review.approved,
+    created_at: review.createdAt,
+    updated_at: review.updatedAt,
+  };
+}
+
+async function supabaseRequest(table, query = "", options = {}) {
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  const response = await fetch(`${base}/rest/v1/${table}${query}`, {
+    method: options.method || "GET",
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Supabase ${table}: ${response.status} ${detail}`.trim());
+  }
+  if (response.status === 204) return [];
+  return response.json().catch(() => []);
+}
+
+async function listEvents(options = {}) {
+  const includePast = options.includePast === true;
+  const admin = options.admin === true;
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("events", "?select=*&order=date.asc&order=time.asc");
+    const events = rows.map(eventRowToRecord);
+    return admin ? events : publicEvents(events, { includePast });
+  }
+  const db = await readDb();
+  return admin ? db.events : publicEvents(db.events, { includePast });
+}
+
+async function saveEvent(event) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("events", "", { method: "POST", body: eventRecordToRow(event) });
+    return eventRowToRecord(rows[0]);
+  }
+  const db = await readDb();
+  db.events.push(event);
+  await writeDb(db);
+  return event;
+}
+
+async function updateEvent(eventId, updates) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest(`events?id=eq.${encodeURIComponent(eventId)}`, "", {
+      method: "PATCH",
+      body: eventRecordToRow(updates),
+    });
+    return rows[0] ? eventRowToRecord(rows[0]) : null;
+  }
+  const db = await readDb();
+  const event = db.events.find((item) => item.id === eventId);
+  if (!event) return null;
+  Object.assign(event, updates);
+  await writeDb(db);
+  return event;
+}
+
+async function deleteEvent(eventId) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest(`events?id=eq.${encodeURIComponent(eventId)}`, "", { method: "DELETE" });
+    return rows[0] ? eventRowToRecord(rows[0]) : null;
+  }
+  const db = await readDb();
+  const removed = db.events.find((item) => item.id === eventId);
+  if (!removed) return null;
+  db.events = db.events.filter((item) => item.id !== eventId);
+  await writeDb(db);
+  return removed;
+}
+
+async function saveInquiry(inquiry) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("inquiries", "", { method: "POST", body: inquiryRecordToRow(inquiry) });
+    return inquiryRowToRecord(rows[0]);
+  }
+  const db = await readDb();
+  db.inquiries.unshift(inquiry);
+  await writeDb(db);
+  return inquiry;
+}
+
+async function listInquiries() {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("inquiries", "?select=*&order=created_at.desc");
+    return rows.map(inquiryRowToRecord);
+  }
+  const db = await readDb();
+  return db.inquiries;
+}
+
+async function deleteInquiry(inquiryId) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest(`inquiries?id=eq.${encodeURIComponent(inquiryId)}`, "", { method: "DELETE" });
+    return rows[0] ? inquiryRowToRecord(rows[0]) : null;
+  }
+  const db = await readDb();
+  const removed = db.inquiries.find((item) => item.id === inquiryId);
+  if (!removed) return null;
+  db.inquiries = db.inquiries.filter((item) => item.id !== inquiryId);
+  await writeDb(db);
+  return removed;
+}
+
+async function listReviews(options = {}) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("reviews", "?select=*&order=created_at.desc");
+    const reviews = rows.map(reviewRowToRecord);
+    return options.admin ? reviews : reviews.filter((review) => review.approved);
+  }
+  const db = await readDb();
+  const reviews = options.admin ? db.reviews : db.reviews.filter((review) => review.approved);
+  return sortByCreatedDesc(reviews);
+}
+
+async function saveReview(review) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest("reviews", "", { method: "POST", body: reviewRecordToRow(review) });
+    return reviewRowToRecord(rows[0]);
+  }
+  const db = await readDb();
+  db.reviews.unshift(review);
+  await writeDb(db);
+  return review;
+}
+
+async function updateReview(reviewId, updates) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest(`reviews?id=eq.${encodeURIComponent(reviewId)}`, "", {
+      method: "PATCH",
+      body: reviewRecordToRow(updates),
+    });
+    return rows[0] ? reviewRowToRecord(rows[0]) : null;
+  }
+  const db = await readDb();
+  const review = db.reviews.find((item) => item.id === reviewId);
+  if (!review) return null;
+  Object.assign(review, updates);
+  await writeDb(db);
+  return review;
+}
+
+async function deleteReview(reviewId) {
+  if (USE_SUPABASE) {
+    const rows = await supabaseRequest(`reviews?id=eq.${encodeURIComponent(reviewId)}`, "", { method: "DELETE" });
+    return rows[0] ? reviewRowToRecord(rows[0]) : null;
+  }
+  const db = await readDb();
+  const removed = db.reviews.find((item) => item.id === reviewId);
+  if (!removed) return null;
+  db.reviews = db.reviews.filter((item) => item.id !== reviewId);
+  await writeDb(db);
+  return removed;
+}
+
+async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/me") {
     const identity = await requireAdmin(req, res);
     if (!identity) return;
@@ -281,8 +533,7 @@ async function handleApi(req, res, url) {
     const admin = url.searchParams.get("admin") === "1";
     if (admin && !(await requireAdmin(req, res))) return;
     const includePast = url.searchParams.get("scope") === "all";
-    const events = admin ? db.events : publicEvents(db.events, { includePast });
-    return sendJson(res, 200, { events });
+    return sendJson(res, 200, { events: await listEvents({ admin, includePast }) });
   }
 
   if (req.method === "POST" && url.pathname === "/api/events") {
@@ -308,10 +559,9 @@ async function handleApi(req, res, url) {
       createdAt: new Date().toISOString(),
     };
 
-    db.events.push(event);
-    await writeDb(db);
-    await logAudit(actor, "create", "event", event.id, `${event.title} (${event.date})`);
-    return sendJson(res, 201, { event });
+    const saved = await saveEvent(event);
+    await logAudit(actor, "create", "event", saved.id, `${saved.title} (${saved.date})`);
+    return sendJson(res, 201, { event: saved });
   }
 
   const eventMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
@@ -319,10 +569,11 @@ async function handleApi(req, res, url) {
     const actor = await requireAdmin(req, res);
     if (!actor) return;
     const body = await readBody(req);
-    const event = db.events.find((item) => item.id === eventMatch[1]);
+    const event = (await listEvents({ admin: true })).find((item) => item.id === eventMatch[1]);
     if (!event) return sendError(res, 404, "Evento não encontrado.");
 
-    Object.assign(event, {
+    const updated = await updateEvent(event.id, {
+      id: event.id,
       title: cleanText(body.title, event.title),
       venue: cleanText(body.venue, event.venue),
       city: cleanText(body.city, event.city),
@@ -333,22 +584,19 @@ async function handleApi(req, res, url) {
       description: cleanText(body.description, event.description),
       ticketUrl: cleanText(body.ticketUrl, event.ticketUrl),
       published: Boolean(body.published),
+      createdAt: event.createdAt,
       updatedAt: new Date().toISOString(),
     });
 
-    await writeDb(db);
-    await logAudit(actor, "update", "event", event.id, `${event.title} (${event.date})`);
-    return sendJson(res, 200, { event });
+    await logAudit(actor, "update", "event", updated.id, `${updated.title} (${updated.date})`);
+    return sendJson(res, 200, { event: updated });
   }
 
   if (eventMatch && req.method === "DELETE") {
     const actor = await requireAdmin(req, res);
     if (!actor) return;
-    const before = db.events.length;
-    const removed = db.events.find((item) => item.id === eventMatch[1]);
-    db.events = db.events.filter((item) => item.id !== eventMatch[1]);
-    if (db.events.length === before) return sendError(res, 404, "Evento não encontrado.");
-    await writeDb(db);
+    const removed = await deleteEvent(eventMatch[1]);
+    if (!removed) return sendError(res, 404, "Evento não encontrado.");
     await logAudit(actor, "delete", "event", eventMatch[1], removed?.title || "Evento apagado");
     return sendJson(res, 200, { ok: true });
   }
@@ -374,25 +622,20 @@ async function handleApi(req, res, url) {
       createdAt: new Date().toISOString(),
     };
 
-    db.inquiries.unshift(inquiry);
-    await writeDb(db);
-    return sendJson(res, 201, { inquiry });
+    return sendJson(res, 201, { inquiry: await saveInquiry(inquiry) });
   }
 
   if (req.method === "GET" && url.pathname === "/api/inquiries") {
     if (!(await requireAdmin(req, res, { ownerOnly: true }))) return;
-    return sendJson(res, 200, { inquiries: db.inquiries });
+    return sendJson(res, 200, { inquiries: await listInquiries() });
   }
 
   const inquiryMatch = url.pathname.match(/^\/api\/inquiries\/([^/]+)$/);
   if (inquiryMatch && req.method === "DELETE") {
     const actor = await requireAdmin(req, res, { ownerOnly: true });
     if (!actor) return;
-    const before = db.inquiries.length;
-    const removed = db.inquiries.find((item) => item.id === inquiryMatch[1]);
-    db.inquiries = db.inquiries.filter((item) => item.id !== inquiryMatch[1]);
-    if (db.inquiries.length === before) return sendError(res, 404, "Pedido não encontrado.");
-    await writeDb(db);
+    const removed = await deleteInquiry(inquiryMatch[1]);
+    if (!removed) return sendError(res, 404, "Pedido não encontrado.");
     await logAudit(actor, "delete", "inquiry", inquiryMatch[1], removed?.name || "Pedido apagado");
     return sendJson(res, 200, { ok: true });
   }
@@ -400,9 +643,7 @@ async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/reviews") {
     const admin = url.searchParams.get("admin") === "1";
     if (admin && !(await requireAdmin(req, res))) return;
-    const reviews = (admin ? db.reviews : db.reviews.filter((review) => review.approved))
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    return sendJson(res, 200, { reviews });
+    return sendJson(res, 200, { reviews: await listReviews({ admin }) });
   }
 
   if (req.method === "POST" && url.pathname === "/api/reviews") {
@@ -424,9 +665,7 @@ async function handleApi(req, res, url) {
       createdAt: new Date().toISOString(),
     };
 
-    db.reviews.unshift(review);
-    await writeDb(db);
-    return sendJson(res, 201, { review });
+    return sendJson(res, 201, { review: await saveReview(review) });
   }
 
   const reviewMatch = url.pathname.match(/^\/api\/reviews\/([^/]+)$/);
@@ -434,23 +673,27 @@ async function handleApi(req, res, url) {
     const actor = await requireAdmin(req, res, { ownerOnly: true });
     if (!actor) return;
     const body = await readBody(req);
-    const review = db.reviews.find((item) => item.id === reviewMatch[1]);
+    const review = (await listReviews({ admin: true })).find((item) => item.id === reviewMatch[1]);
     if (!review) return sendError(res, 404, "Avaliação não encontrada.");
-    review.approved = Boolean(body.approved);
-    review.updatedAt = new Date().toISOString();
-    await writeDb(db);
-    await logAudit(actor, review.approved ? "approve" : "unapprove", "review", review.id, review.name);
-    return sendJson(res, 200, { review });
+    const updated = await updateReview(review.id, {
+      id: review.id,
+      name: review.name,
+      event: review.event,
+      rating: review.rating,
+      message: review.message,
+      approved: Boolean(body.approved),
+      createdAt: review.createdAt,
+      updatedAt: new Date().toISOString(),
+    });
+    await logAudit(actor, updated.approved ? "approve" : "unapprove", "review", updated.id, updated.name);
+    return sendJson(res, 200, { review: updated });
   }
 
   if (reviewMatch && req.method === "DELETE") {
     const actor = await requireAdmin(req, res, { ownerOnly: true });
     if (!actor) return;
-    const before = db.reviews.length;
-    const removed = db.reviews.find((item) => item.id === reviewMatch[1]);
-    db.reviews = db.reviews.filter((item) => item.id !== reviewMatch[1]);
-    if (db.reviews.length === before) return sendError(res, 404, "Avaliação não encontrada.");
-    await writeDb(db);
+    const removed = await deleteReview(reviewMatch[1]);
+    if (!removed) return sendError(res, 404, "Avaliação não encontrada.");
     await logAudit(actor, "delete", "review", reviewMatch[1], removed?.name || "Avaliação apagada");
     return sendJson(res, 200, { ok: true });
   }
@@ -496,8 +739,14 @@ async function serveStatic(req, res, url) {
 
   try {
     const content = await readFile(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const cacheControl = [".webp", ".jpg", ".jpeg", ".png", ".svg", ".ico", ".css", ".js"].includes(ext)
+      ? "public, max-age=604800"
+      : "public, max-age=3600";
     res.writeHead(200, {
-      "Content-Type": MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Cache-Control": cacheControl,
+      "Content-Length": content.length,
       "X-Content-Type-Options": "nosniff",
     });
     res.end(content);
