@@ -38,6 +38,13 @@ const MIME = {
   ".csv": "text/csv; charset=utf-8",
 };
 
+const BLOCKED_STATIC_PATHS = new Set([
+  "/server.js",
+  "/package.json",
+  "/render.yaml",
+  "/README.md",
+]);
+
 const initialDb = {
   events: [],
   inquiries: [],
@@ -470,7 +477,13 @@ async function serveStatic(req, res, url) {
     );
   }
   if (pathname === "/") pathname = "/index.html";
-  if (pathname.startsWith("/data/")) {
+  if (
+    pathname.startsWith("/data/") ||
+    pathname.startsWith("/.git/") ||
+    pathname.startsWith("/google-apps-script/") ||
+    pathname.includes("/.") ||
+    BLOCKED_STATIC_PATHS.has(pathname)
+  ) {
     res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end("Forbidden");
   }
@@ -485,6 +498,7 @@ async function serveStatic(req, res, url) {
     const content = await readFile(filePath);
     res.writeHead(200, {
       "Content-Type": MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "X-Content-Type-Options": "nosniff",
     });
     res.end(content);
   } catch {
